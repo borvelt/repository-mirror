@@ -1,0 +1,72 @@
+#!/bin/bash
+
+#git mirror created by borvelt.
+
+function CreateMIRRORConnection {
+    git remote add "$MIRROR_CONNECTION" "$1"
+}
+
+function RemoveMIRRORConnection {
+    git remote remove "${MIRROR_CONNECTION}"
+}
+
+function P2PArray {
+    MATCHED_ITEM=""
+    ARR1=($1)
+    ARR2=($2)
+    VALUE=$3
+    for IDX in ${!ARR1[@]};
+    do
+        if [[ "${ARR1[$IDX]}" = "$VALUE" ]];then
+            MATCHED_ITEM="${ARR2[$IDX]}"
+            break
+        fi
+    done
+}
+
+REPOS=(https://github.com/borvelt/redux-peach.git https://github.com/borvelt/react-native-boilerplate)
+MIRROR_REPOS=(git@gitlab.com:borvelt/redux-peach.git git@gitlab.com:borvelt/react-native-boilerplate.git)
+DEFAULT_CONNECTION=origin
+DEFAULT_BRANCH=master
+MIRROR_CONNECTION="mirror"
+CURRENT_DIRECTORY=$PWD
+DIRECTORY="$CURRENT_DIRECTORY/.repo/"
+
+if [ ! -d "$DIRECTORY" ]; then
+    mkdir $DIRECTORY
+fi
+
+for CURRENT_PROJECT in "${REPOS[@]}"
+do
+    cd $DIRECTORY
+    IFS=’/’ read -r -a DIRS <<< "${CURRENT_PROJECT}"
+    DIR=${DIRS[*]: -1}
+    if [ ! -d "$DIR" ]; then
+        git clone "${CURRENT_PROJECT}" $DIR
+        cd "${DIRECTORY}${DIR}"
+    else
+        cd "${DIRECTORY}${DIR}"
+        git pull "$DEFAULT_CONNECTION" "$DEFAULT_BRANCH"
+    fi
+    REMOTES=$(git remote -v| cut -d ' ' -f 1);
+    REMOTES=$(echo $REMOTES | awk -v RS='[,[:space:]]+' '!a[$0]++{printf "%s%s", $0, RT}')
+    IFS=' ' read -r -a SPLIT_REMOTES <<< $REMOTES
+    IS_MIRROR_CONNECTION_FOUNDED=false
+    for index in "${!SPLIT_REMOTES[@]}"
+    do
+        if [[ ${SPLIT_REMOTES[$index]} == "$MIRROR_CONNECTION" ]];then
+            IS_MIRROR_CONNECTION_FOUNDED=true
+            if [[ ${SPLIT_REMOTES[$index+1]} != "$CURRENT_PROJECT" && ${SPLIT_REMOTES[$index+1]} != "" ]];then
+                RemoveMIRRORConnection
+                CreateMIRRORConnection "$CURRENT_PROJECT"
+            fi
+        fi
+    done
+    if [[ $IS_MIRROR_CONNECTION_FOUNDED == false ]];then
+        P2PArray "${REPOS[*]}" "${MIRROR_REPOS[*]}" "$CURRENT_PROJECT"
+        CreateMIRRORConnection "$MATCHED_ITEM"
+    fi
+    printf "Pushing $CURRENT_PROJECT all tags and branches to it's mirror $MATCHED_ITEM\n"
+    git push "$MIRROR_CONNECTION" --all
+    git push "$MIRROR_CONNECTION" --tags
+done
