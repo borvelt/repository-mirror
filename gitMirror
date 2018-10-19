@@ -2,6 +2,14 @@
 
 #git mirror created by borvelt.
 
+REPOS=(https://github.com/borvelt/redux-peach.git https://github.com/borvelt/react-native-boilerplate)
+MIRROR_REPOS=(git@gitlab.com:borvelt/redux-peach.git git@gitlab.com:borvelt/react-native-boilerplate.git)
+DEFAULT_CONNECTION=origin
+DEFAULT_BRANCH=master
+MIRROR_CONNECTION="mirror"
+CURRENT_DIRECTORY=$PWD
+DIRECTORY="$CURRENT_DIRECTORY/.repo/"
+
 function CreateMIRRORConnection {
     git remote add "$MIRROR_CONNECTION" "$1"
 }
@@ -23,14 +31,6 @@ function P2PArray {
         fi
     done
 }
-
-REPOS=(https://github.com/borvelt/redux-peach.git https://github.com/borvelt/react-native-boilerplate)
-MIRROR_REPOS=(git@gitlab.com:borvelt/redux-peach.git git@gitlab.com:borvelt/react-native-boilerplate.git)
-DEFAULT_CONNECTION=origin
-DEFAULT_BRANCH=master
-MIRROR_CONNECTION="mirror"
-CURRENT_DIRECTORY=$PWD
-DIRECTORY="$CURRENT_DIRECTORY/.repo/"
 
 if [ ! -d "$DIRECTORY" ]; then
     mkdir $DIRECTORY
